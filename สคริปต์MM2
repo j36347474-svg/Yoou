@@ -1,0 +1,145 @@
+-- MM2 Script (Minified Version - By บังเจษ🔑)
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local P, W = game:GetService("Players"), game:GetService("Workspace")
+local LP = P.LocalPlayer
+
+local Win = Rayfield:CreateWindow({Name = "MM2", LoadingTitle = "กำลังโหลด...", LoadingSubtitle = "โดย บังเจษ🔑", ConfigurationSaving = {Enabled = false}})
+local AutoCoin, ESPEnabled, SilentAim, KillAll, Speed = false, false, false, false, 0.3
+
+local function GetRole(p)
+   if not p then return "Innocent" end
+   local c, b = p.Character, p:FindFirstChild("Backpack")
+   if (c and (c:FindFirstChild("Knife") or c:FindFirstChild("Revolver"))) or (b and (b:FindFirstChild("Knife") or b:FindFirstChild("Revolver"))) then return "Murderer" end
+   if (c and c:FindFirstChild("Gun")) or (b and b:FindFirstChild("Gun")) then return "Sheriff" end
+   return "Innocent"
+end
+
+local function GetMurd() for _, p in pairs(P:GetPlayers()) do if p ~= LP and GetRole(p) == "Murderer" then return p end end end
+
+local function ApplyESP(p)
+   if p == LP or not p.Character or not p.Character:FindFirstChild("HumanoidRootPart") then return end
+   local c, r = p.Character, GetRole(p)
+   if ESPEnabled and c:FindFirstChild("Humanoid") and c.Humanoid.Health > 0 then
+      local col = r == "Murderer" and Color3.fromRGB(255,0,0) or (r == "Sheriff" and Color3.fromRGB(0,120,255) or Color3.fromRGB(0,255,0))
+      local hl = c:FindFirstChild("MM2_HL") or Instance.new("Highlight", c)
+      hl.Name, hl.FillColor, hl.OutlineColor, hl.DepthMode = "MM2_HL", col, col, Enum.HighlightDepthMode.AlwaysOnTop
+      local head = c:FindFirstChild("Head")
+      if head then
+         local tag = head:FindFirstChild("MM2_Tag") or Instance.new("BillboardGui", head)
+         tag.Name, tag.Size, tag.StudsOffset, tag.AlwaysOnTop = "MM2_Tag", UDim2.new(0,100,0,40), Vector3.new(0,2.5,0), true
+         local lbl = tag:FindFirstChild("L") or Instance.new("TextLabel", tag)
+         lbl.Name, lbl.Size, lbl.BackgroundTransparency, lbl.TextScaled, lbl.Font, lbl.TextStrokeTransparency, lbl.TextColor3 = "L", UDim2.new(1,0,1,0), 1, true, Enum.Font.SourceSansBold, 0, col
+         lbl.Text = p.DisplayName .. "\n[" .. (r == "Murderer" and "ฆาตกร" or (r == "Sheriff" and "นายอำเภอ" or "ผู้บริสุทธิ์")) .. "]"
+      end
+   else
+      if c:FindFirstChild("MM2_HL") then c.MM2_HL:Destroy() end
+      if c:FindFirstChild("Head") and c.Head:FindFirstChild("MM2_Tag") then c.Head.MM2_Tag:Destroy() end
+   end
+end
+
+-- 1. Creator
+local T1 = Win:CreateTab("ผู้สร้าง 🔑", 4483362458)
+T1:CreateButton({Name = "คัดลอก Discord", Callback = function() setclipboard("https://discord.gg/hE8QDjvbxA") end})
+
+-- 2. Farm
+local T2 = Win:CreateTab("ทั่วไป/ฟาร์ม 🪙", 4483362458)
+T2:CreateToggle({Name = "เก็บเหรียญ (Auto Coin)", CurrentValue = false, Callback = function(v)
+   AutoCoin = v
+   task.spawn(function()
+      while AutoCoin do
+         task.wait(Speed)
+         pcall(function()
+            local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+               for _, o in pairs(W:GetDescendants()) do
+                  if not AutoCoin then break end
+                  if (o.Name == "CoinContainer" or o.Name == "CoinServer" or o.Name == "Coins") then
+                     for _, c in pairs(o:GetChildren()) do
+                        local p = c:IsA("BasePart") and c or c:FindFirstChildWhichIsA("BasePart")
+                        if p and p.Transparency < 0.9 then
+                           root.CFrame = p.CFrame
+                           if firetouchinterest then firetouchinterest(root, p, 0) task.wait(0.02) firetouchinterest(root, p, 1) end
+                           task.wait(Speed)
+                        end
+                     end
+                  end
+               end
+            end
+         end)
+      end
+   end)
+end})
+T2:CreateSlider({Name = "ความเร็วฟาร์ม", Range = {0.1, 1}, Increment = 0.1, CurrentValue = 0.3, Callback = function(v) Speed = v end})
+T2:CreateSlider({Name = "WalkSpeed", Range = {16, 100}, Increment = 1, CurrentValue = 16, Callback = function(v) LP.Character.Humanoid.WalkSpeed = v end})
+
+-- 3. ESP
+local T3 = Win:CreateTab("มองทะลุ (ESP) 👁️", 4483362458)
+T3:CreateToggle({Name = "เปิด ESP", CurrentValue = false, Callback = function(v) ESPEnabled = v end})
+
+P.PlayerAdded:Connect(function(p) p.CharacterAdded:Connect(function() task.wait(1) if ESPEnabled then ApplyESP(p) end end) end)
+task.spawn(function()
+   while true do
+      task.wait(0.5)
+      if ESPEnabled then
+         pcall(function()
+            for _, p in pairs(P:GetPlayers()) do ApplyESP(p) end
+            local g = W:FindFirstChild("GunDrop", true)
+            if g then
+               local hl = g:FindFirstChild("G_HL") or Instance.new("Highlight", g)
+               hl.Name, hl.FillColor, hl.DepthMode = "G_HL", Color3.fromRGB(255,215,0), Enum.HighlightDepthMode.AlwaysOnTop
+            end
+         end)
+      end
+   end
+end)
+
+-- 4. Combat
+local T4 = Win:CreateTab("ระบบต่อสู้ ⚔️", 4483362458)
+local meta = getrawmetatable(game)
+local old = meta.__namecall
+setreadonly(meta, false)
+meta.__namecall = newcclosure(function(self, ...)
+   if SilentAim and (getnamecallmethod() == "FireServer" or getnamecallmethod() == "InvokeServer") then
+      local m = GetMurd()
+      if m and m.Character and m.Character:FindFirstChild("HumanoidRootPart") then
+         local args = {...}
+         for i, a in pairs(args) do
+            if typeof(a) == "Vector3" then args[i] = m.Character.HumanoidRootPart.Position
+            elseif typeof(a) == "CFrame" then args[i] = m.Character.HumanoidRootPart.CFrame end
+         end
+         return old(self, unpack(args))
+      end
+   end
+   return old(self, ...)
+end)
+setreadonly(meta, true)
+
+T4:CreateToggle({Name = "Silent Aim", CurrentValue = false, Callback = function(v) SilentAim = v end})
+T4:CreateToggle({Name = "Kill All Loop", CurrentValue = false, Callback = function(v)
+   KillAll = v
+   task.spawn(function()
+      while KillAll do
+         task.wait(0.1)
+         pcall(function()
+            local k = LP.Character:FindFirstChild("Knife") or LP.Backpack:FindFirstChild("Knife")
+            if k then
+               k.Parent = LP.Character
+               for _, t in pairs(P:GetPlayers()) do
+                  if t ~= LP and t.Character and t.Character:FindFirstChild("HumanoidRootPart") and t.Character.Humanoid.Health > 0 then
+                     LP.Character.HumanoidRootPart.CFrame = t.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 1)
+                     k:Activate()
+                     task.wait(0.15)
+                  end
+               end
+            end
+         end)
+      end
+   end)
+end})
+
+-- 5. Teleport
+local T5 = Win:CreateTab("วาร์ป 🌀", 4483362458)
+T5:CreateButton({Name = "วาร์ปไปหาฆาตกร", Callback = function() local m = GetMurd() if m and m.Character then LP.Character.HumanoidRootPart.CFrame = m.Character.HumanoidRootPart.CFrame end end})
+T5:CreateButton({Name = "วาร์ปไปเก็บปืนตก", Callback = function() local g = W:FindFirstChild("GunDrop", true) if g then LP.Character.HumanoidRootPart.CFrame = g.CFrame end end})
+
+Rayfield:Notify({Title = "โหลดสำเร็จ", Content = "บังเจษ🔑 MM2 Script Loaded", Duration = 2})
